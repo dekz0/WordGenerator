@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
 Конфигурация PyInstaller для сборки exe файла.
+Без pandas/numpy для минимального размера.
 """
 
 block_cipher = None
@@ -15,20 +16,23 @@ a = Analysis(
     hiddenimports=[
         'customtkinter',
         'docxtpl',
-        'pandas',
         'openpyxl',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
+        # Исключаем тяжёлые библиотеки
+        'pandas',
+        'numpy',
         'matplotlib',
-        'numpy.testing',
         'scipy',
         'PIL',
         'cv2',
         'tensorflow',
         'torch',
+        'tkinter.test',
+        'unittest',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,

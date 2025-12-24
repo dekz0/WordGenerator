@@ -1,11 +1,13 @@
 """
 Загрузчик данных из Excel.
 Single Responsibility: только загрузка данных.
+Используем openpyxl напрямую для минимального размера exe.
 """
 
 from pathlib import Path
 from typing import Protocol
-import pandas as pd
+
+from openpyxl import load_workbook
 
 
 class DataLoaderError(Exception):
@@ -25,9 +27,10 @@ class ExcelLoader:
     """
     Загрузчик Excel файлов.
     Преобразует данные в список словарей для дальнейшей обработки.
+    Использует openpyxl напрямую (без pandas/numpy) для лёгкого exe.
     """
 
-    SUPPORTED_EXTENSIONS = (".xlsx", ".xls")
+    SUPPORTED_EXTENSIONS = (".xlsx",)
 
     def load(self, file_path: Path) -> list[dict]:
         """
@@ -45,24 +48,41 @@ class ExcelLoader:
         self._validate_file(file_path)
 
         try:
-            # Используем openpyxl для xlsx (быстрее)
-            df = pd.read_excel(
-                file_path,
-                engine="openpyxl" if file_path.suffix == ".xlsx" else None,
-                dtype=str,  # Все как строки для сохранения форматирования
-            )
+            wb = load_workbook(file_path, read_only=True, data_only=True)
+            ws = wb.active
 
-            # Убираем пробелы из названий колонок
-            df.columns = df.columns.str.strip()
+            rows = list(ws.iter_rows(values_only=True))
+            wb.close()
 
-            # Заполняем NaN пустыми строками
-            df = df.fillna("")
+            if not rows:
+                raise DataLoaderError("Excel файл пуст или не содержит данных")
 
-            # Преобразуем в список словарей
-            records = df.to_dict("records")
+            # Первая строка — заголовки
+            headers = [
+                str(h).strip() if h is not None else f"Column_{i}"
+                for i, h in enumerate(rows[0])
+            ]
+
+            # Остальные строки — данные
+            records = []
+            for row in rows[1:]:
+                # Пропускаем полностью пустые строки
+                if all(cell is None or str(cell).strip() == "" for cell in row):
+                    continue
+
+                record = {}
+                for i, value in enumerate(row):
+                    if i < len(headers):
+                        # Преобразуем в строку, None → пустая строка
+                        record[headers[i]] = (
+                            str(value).strip() if value is not None else ""
+                        )
+                records.append(record)
 
             if not records:
-                raise DataLoaderError("Excel файл пуст или не содержит данных")
+                raise DataLoaderError(
+                    "Excel файл не содержит данных (только заголовки)"
+                )
 
             return records
 
@@ -84,12 +104,17 @@ class ExcelLoader:
         self._validate_file(file_path)
 
         try:
-            df = pd.read_excel(
-                file_path,
-                engine="openpyxl" if file_path.suffix == ".xlsx" else None,
-                nrows=0,  # Читаем только заголовки
-            )
-            return [col.strip() for col in df.columns.tolist()]
+            wb = load_workbook(file_path, read_only=True, data_only=True)
+            ws = wb.active
+
+            # Читаем только первую строку
+            first_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
+            wb.close()
+
+            return [
+                str(h).strip() if h is not None else f"Column_{i}"
+                for i, h in enumerate(first_row)
+            ]
         except Exception as e:
             raise DataLoaderError(f"Ошибка чтения заголовков Excel: {e}")
 
@@ -97,6 +122,12 @@ class ExcelLoader:
         """Проверить корректность файла."""
         if not file_path.exists():
             raise DataLoaderError(f"Файл не найден: {file_path}")
+
+        if file_path.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
+            raise DataLoaderError(
+                f"Неподдерживаемый формат файла: {file_path.suffix}. "
+                f"Поддерживается только .xlsx"
+            )
 
         if file_path.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
             raise DataLoaderError(
