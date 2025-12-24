@@ -46,9 +46,6 @@ class DataValidator:
     Предоставляет понятные сообщения об ошибках для пользователя.
     """
 
-    def __init__(self, max_rows: int = 5000):
-        self._max_rows = max_rows
-
     def validate(self, data: list[dict], template_vars: set[str]) -> ValidationResult:
         """
         Валидировать данные на соответствие шаблону.
@@ -66,14 +63,6 @@ class DataValidator:
         # Проверка на пустые данные
         if not data:
             errors.append("Excel файл не содержит данных")
-            return ValidationResult.failure(errors)
-
-        # Проверка количества строк
-        if len(data) > self._max_rows:
-            errors.append(
-                f"Превышен лимит строк: {len(data)} > {self._max_rows}. "
-                f"Разбейте файл на части."
-            )
             return ValidationResult.failure(errors)
 
         # Получаем колонки из данных

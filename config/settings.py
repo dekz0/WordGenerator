@@ -20,9 +20,8 @@ def get_app_dir() -> Path:
 class AppSettings:
     """Неизменяемые настройки приложения."""
 
-    # Лимиты
-    MAX_ROWS: int = 5000
-    MAX_WORKERS: int = 4  # Потоки для параллельной обработки
+    # Потоки для параллельной обработки
+    MAX_WORKERS: int = 4
 
     # Паттерн имени файла (можно использовать переменные из Excel)
     FILENAME_PATTERN: str = "Документ_{index}"
