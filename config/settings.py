@@ -24,7 +24,7 @@ class AppSettings:
     MAX_WORKERS: int = 4
 
     # Паттерн имени файла (можно использовать переменные из Excel)
-    FILENAME_PATTERN: str = "Документ_{index}"
+    FILENAME_PATTERN: str = "{chsi_name}_{debtor_iin}"
 
     # Расширения файлов
     EXCEL_EXTENSIONS: tuple = (".xlsx", ".xls")
