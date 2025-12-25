@@ -45,7 +45,7 @@ class AppSettings:
 
     @property
     def log_file(self) -> Path:
-        return self.app_dir / "app.log"
+        return self.app_dir / "wordgeneratorlogs.log"
 
     @property
     def templates_dir(self) -> Path:
