@@ -57,15 +57,21 @@ class ExcelLoader:
             if not rows:
                 raise DataLoaderError("Excel файл пуст или не содержит данных")
 
-            # Первая строка — заголовки
+            if len(rows) < 2:
+                raise DataLoaderError(
+                    "Excel файл должен содержать минимум 2 строки (описание и заголовки)"
+                )
+
+            # Строка 1 (индекс 0) — описания переменных (пропускаем)
+            # Строка 2 (индекс 1) — названия переменных (заголовки)
             headers = [
                 str(h).strip() if h is not None else f"Column_{i}"
-                for i, h in enumerate(rows[0])
+                for i, h in enumerate(rows[1])
             ]
 
-            # Остальные строки — данные
+            # Строка 3+ (индекс 2+) — данные
             records = []
-            for row in rows[1:]:
+            for row in rows[2:]:
                 # Пропускаем полностью пустые строки
                 if all(cell is None or str(cell).strip() == "" for cell in row):
                     continue
@@ -107,13 +113,13 @@ class ExcelLoader:
             wb = load_workbook(file_path, read_only=True, data_only=True)
             ws = wb.active
 
-            # Читаем только первую строку
-            first_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
+            # Читаем вторую строку (заголовки), первая строка — описания
+            header_row = next(ws.iter_rows(min_row=2, max_row=2, values_only=True))
             wb.close()
 
             return [
                 str(h).strip() if h is not None else f"Column_{i}"
-                for i, h in enumerate(first_row)
+                for i, h in enumerate(header_row)
             ]
         except Exception as e:
             raise DataLoaderError(f"Ошибка чтения заголовков Excel: {e}")
