@@ -144,7 +144,6 @@ KeyError: 'Дата_договора'
 Файл `config/settings.py`:
 
 ```python
-MAX_ROWS = 5000              # Лимит строк
 MAX_WORKERS = 4              # Потоков для обработки
 FILENAME_PATTERN = "Документ_{index}"  # Паттерн имени файла
 ```
@@ -164,17 +163,9 @@ FILENAME_PATTERN = "Документ_{index}"  # Паттерн имени фа�
 
 Core-модули тестируются без UI:
 
-```python
-from core.loader import ExcelLoader
-from core.template import WordTemplate
-
-loader = ExcelLoader()
-data = loader.load(Path('data.xlsx'))
-
-template = WordTemplate(Path('template.docx'))
-content = template.render(data[0])
+```bash
+python app.py
 ```
-
 ---
 
 ## 📈 Расширяемость
