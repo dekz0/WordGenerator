@@ -10,3 +10,5 @@ python-docx==1.2.0
 
 # Для PyInstaller (сборка exe)
 pyinstaller==6.11.1
+
+num2words==0.5.14

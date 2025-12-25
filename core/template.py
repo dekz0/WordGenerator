@@ -7,6 +7,21 @@ from pathlib import Path
 from typing import Protocol
 
 from docxtpl import DocxTemplate
+from num2words import num2words
+
+
+def num_to_kzt_text(value: float) -> str:
+    """Преобразовать число в текст суммы в тенге."""
+    tenge = int(value)
+    tiyin = round((value - tenge) * 100)
+
+    tenge_text = num2words(tenge, lang="ru")
+
+    result = f"({tenge_text}) тенге"
+    if tiyin > 0:
+        result += f" и {tiyin:02d} тиын"
+
+    return result
 
 
 class TemplateError(Exception):
@@ -93,6 +108,9 @@ class WordTemplate:
             Байты готового документа
         """
         try:
+            # Добавляем вычисляемые поля
+            context = self._add_computed_fields(context)
+
             # Создаём новый экземпляр для каждого рендера (thread-safe)
             doc = DocxTemplate(self._template_path)
             doc.render(context)
@@ -108,6 +126,29 @@ class WordTemplate:
 
         except Exception as e:
             raise TemplateError(f"Ошибка рендеринга шаблона: {e}")
+
+    def _add_computed_fields(self, context: dict) -> dict:
+        """
+        Добавить вычисляемые поля в контекст.
+
+        Args:
+            context: Исходный контекст данных
+
+        Returns:
+            Контекст с добавленными вычисляемыми полями
+        """
+        # Копируем контекст чтобы не изменять оригинал
+        result = dict(context)
+
+        # debt_amount_text - сумма долга прописью в тенге
+        if "debt_amount" in result and result["debt_amount"] is not None:
+            try:
+                value = float(result["debt_amount"])
+                result["debt_amount_text"] = num_to_kzt_text(value)
+            except (ValueError, TypeError):
+                result["debt_amount_text"] = ""
+
+        return result
 
     @property
     def path(self) -> Path:

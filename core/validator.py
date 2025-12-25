@@ -46,6 +46,11 @@ class DataValidator:
     Предоставляет понятные сообщения об ошибках для пользователя.
     """
 
+    # Вычисляемые поля, которые не требуют наличия в Excel
+    COMPUTED_FIELDS = {
+        "debt_amount_text",  # Сумма долга прописью (вычисляется из debt_amount)
+    }
+
     def validate(self, data: list[dict], template_vars: set[str]) -> ValidationResult:
         """
         Валидировать данные на соответствие шаблону.
@@ -68,8 +73,11 @@ class DataValidator:
         # Получаем колонки из данных
         excel_columns = set(data[0].keys())
 
+        # Исключаем вычисляемые поля из проверки
+        required_vars = template_vars - self.COMPUTED_FIELDS
+
         # Проверяем наличие всех переменных шаблона в колонках Excel
-        missing_columns = template_vars - excel_columns
+        missing_columns = required_vars - excel_columns
         if missing_columns:
             errors.append(
                 f"В Excel отсутствуют колонки для переменных шаблона: "
@@ -84,8 +92,8 @@ class DataValidator:
                 f"{', '.join(sorted(unused_columns))}"
             )
 
-        # Проверка на пустые значения в используемых колонках
-        empty_cells = self._find_empty_cells(data, template_vars)
+        # Проверка на пустые значения в используемых колонках (исключая вычисляемые)
+        empty_cells = self._find_empty_cells(data, required_vars)
         if empty_cells:
             warnings.append(
                 f"Найдены пустые значения в строках: "
@@ -111,7 +119,10 @@ class DataValidator:
         """
         errors = []
 
-        for var in template_vars:
+        # Исключаем вычисляемые поля из проверки
+        required_vars = template_vars - self.COMPUTED_FIELDS
+
+        for var in required_vars:
             if var not in row:
                 errors.append(f"Отсутствует значение для переменной: {var}")
 
